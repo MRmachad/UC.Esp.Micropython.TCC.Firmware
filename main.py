@@ -38,7 +38,7 @@ def encapsulaLaco():
     
     AccX, AccY, AccZ, timer = mp_esp.pega_valor()
             
-    card_SD.preeencheARQ(id_esp, AccX, AccY, AccZ, timer, corte = 85)
+    card_SD.preeencheARQ(id_esp, AccX, AccY, AccZ, timer, corte = 5)
     
     return card_SD.contPasta
 

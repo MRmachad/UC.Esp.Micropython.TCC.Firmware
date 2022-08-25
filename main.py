@@ -13,14 +13,19 @@ import os
 
 id_esp = 1
 dir_padrao = '/'
+_sd = "acess"
+_passw = "12345678"
+set_host = '192.168.63.227'
+set_porta = 3060
+
 rtc = machine.RTC()
 deg = Pin(21, Pin.IN)
 led = Pin(2, Pin.OUT)
-ContArquivosEnvio = 11
+ContArquivosEnvio = 1
 acorda = machine.Pin(27, mode = Pin.IN)
-mp_esp = FaceI2C(dir = dir_padrao, gav = False, scale = 0, freqAmostra = 200)                                                 # mudar para /sd quando montar o filesystem  
-card_SD = OnSd(dir_padrao, _ContArquivosEnvio = ContArquivosEnvio)                                                            # mudar para /sd quando montar o filesystem 
-card_SD_envio = OnSd(dir_padrao, porta_p = 3060)                                                                              # mudar para /sd quando montar o filesystem  
+mp_esp = FaceI2C(dir = dir_padrao, gav = True, scale = 0, freqAmostra = 200, SDA_PIN = 25, SCL_PIN = 26)                                                 # mudar para /sd quando montar o filesystem  
+card_SD = OnSd(dir_padrao, _ContArquivosEnvio = ContArquivosEnvio, host_p = set_host, porta_p = set_porta)                                                            # mudar para /sd quando montar o filesystem 
+card_SD_envio = OnSd(dir_padrao, host_p = set_host, porta_p = set_porta)                                                                              # mudar para /sd quando montar o filesystem  
 
 
 def dormindo(islight = False):
@@ -38,13 +43,13 @@ def encapsulaLaco():
     
     AccX, AccY, AccZ, timer = mp_esp.pega_valor()
             
-    card_SD.preeencheARQ(id_esp, AccX, AccY, AccZ, timer, corte = 85)
+    card_SD.preeencheARQ(id_esp, AccX, AccY, AccZ, timer)
     
     return card_SD.contPasta
 
 def setupEnvio():
     
-    pointWifi = AcessWifi()
+    pointWifi = AcessWifi(sd = _sd, passw = _passw)
     pointWifi.do_connect_STA()
     
     card_SD_envio.enviaPacs()
@@ -65,9 +70,9 @@ def setupConfig():
             os.remove("./contPasta.txt")
         os.mkdir("./data")                                           # condicionar a criação a somente se não tiver 
         os.chdir("./data")
-        os.mkdir("./JSON0") 
+        os.mkdir("./0") 
 
-    pointWifi = AcessWifi()
+    pointWifi = AcessWifi(sd = _sd, passw = _passw)
     pointWifi.do_connect_STA()
     
     mp_esp.Calendario()
@@ -106,5 +111,7 @@ if __name__ == '__main__':
             setupConfig()
         
        
+
+
 
 

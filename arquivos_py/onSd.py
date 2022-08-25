@@ -1,5 +1,8 @@
 from arquivos_py.acessServe import AcessServe
+from array import array
+
 import micropython
+import struct
 import json
 import os
 import gc
@@ -26,15 +29,11 @@ class OnSd(AcessServe):
         print('\n-----------------------------')
         print('Initial free: {} allocated: {}\n'.format(gc.mem_free(), gc.mem_alloc()))
     
-    def auxSalvaJson(self, timers = [], DataACCdic = {}):
-        
-        f = open((self.dir + "/data/JSON"+str(self.contPasta) +"/"+ str(timers[0]+ "--" + timers[1])+ ".txt"), 'a')
-        f.write(json.dumps((DataACCdic)) + ",,")
-        f.close()
+
         
     def AumentaContPasta(self):
         
-        if  len(os.listdir(self.dir + "/data/JSON"+str(self.contPasta))) == 10: ########
+        if  len(os.listdir(self.dir + "/data/"+str(self.contPasta))) >= 10: ########
             if (self.contPasta+1) == self.ControleDeArquivos:
                 
                 f = open((self.dir + "/contPasta.txt"), 'w')
@@ -50,66 +49,109 @@ class OnSd(AcessServe):
                 
                 self.contPasta+=1
                 
-                if ("JSON" + str(self.contPasta)) not in os.listdir(self.dir + "/data"):
+                if (str(self.contPasta)) not in os.listdir(self.dir + "/data"):
                     os.chdir("./data")
-                    os.mkdir("./JSON" + str(self.contPasta))
+                    os.mkdir("./" + str(self.contPasta))
     
     def contArq(self):
         
         v_dirs = sorted(os.listdir(self.dir + "/data"))
         #print(v_dirs)
         return v_dirs
+    
+    
+    def auxSalvaDados(self, nameDateDataId = "", floatlist = []):
+        
+        print((self.dir + "/data/"+str(self.contPasta) +"/"+ nameDateDataId))
+        
+        output_file = open((self.dir + "/data/"+str(self.contPasta) +"/"+ nameDateDataId), "w+b")
+        
+        float_array = array('f', floatlist)
+
+        #print("\n=> ", float_array.buffer_info())
+
+        output_file.write(bytes(float_array))
+        output_file.close()
             
-    def preeencheARQ(self, id_esp = 0, AccX = [], AccY = [], AccZ = [], timer = [], corte = 5):        
+    def preeencheARQ(self, id_esp = 0, AccX = [], AccY = [], AccZ = [], timer = []):        
         
-        DataACC = {("0A_TIMER_INI"): str(timer[0]),("0A_TIMER_FIN"): str(timer[1]), ("0A_ID_ESP"): str(id_esp)}
+        nameDateDataId = (str(timer[0]) + "-" + str(timer[1])+ "-" + str(id_esp))
         
-        self.auxSalvaJson(timer, DataACC)
-        DataACC = {}
+        floatlist = []
         
-        i = 0
+        for Nacc in range(len(AccX)):
+            floatlist.append(AccX[Nacc])
+            floatlist.append(AccY[Nacc])
+            floatlist.append(AccZ[Nacc])
         
-        while i != len(AccX):
-            for lote in range(corte):
-                
-                data = {str(i) + "_AccX": str(AccX[i]), str(i) + "_AccY": str(AccY[i]),  str(i) + "_AccZ" : str(AccZ[i])}
-                DataACC.update(data)
-                i+=1
-                #print(i)
-                if i >= len(AccX):
-                    #print("\n=> Ultimo envio Quebrado\n")
-                    break
-                
-            self.auxSalvaJson(timer, DataACC)
-            DataACC = {}
+        self.auxSalvaDados(nameDateDataId, floatlist)
         
         self.AumentaContPasta()
+        
+        
         
     def enviaPacs(self):
         
         v_dirs_envio = self.contArq()
         print(v_dirs_envio)
-
         
-        for JOSNx in v_dirs_envio:
+        for LoteX in v_dirs_envio:
             
-            realJSON = sorted(os.listdir(self.dir + "/data/" + JOSNx))
+            realBin = sorted(os.listdir(self.dir + "/data/" + LoteX))
             #print("\n=> Quantidade de aruivos dentro do json corrente: ", len(realJSON))
             
-            for lt in (realJSON):
+            for pack in (realBin):
                 
                 self.esvazia_memoria()
-                DataACC = open(self.dir + "/data/"+ str(JOSNx) + "/" + lt).read().split(",,")
+                input_file = open((self.dir + "/data/"+ str(LoteX) + "/" + pack), 'r+b')
+
+                try:
+                           
+                    float_array = array('f')
+                    
+                    float_array = struct.unpack((170*3*'f'), input_file.read())
+                    
+                    print("\n=> ", float_array[0])
+                    
+                    ##colocar em string json
+                    
+                    T_ini = pack[:pack.rfind("b")-1]
+                    T_fim = pack[pack.rfind("b"):pack.rfind("-")]
+                    id = pack[pack.rfind("-")+1:]
+                    
+                    print(T_ini," ",T_fim," ", id)
+                    
+                    DataACCdic = {("0A_TIMER_INI"): T_ini,("0A_TIMER_FIN"): T_fim, ("0A_ID_ESP"): id}
+                    
+                    self.envia_servico(json.dumps((DataACCdic)))
+                    
+                    DataACCdic = {}
+                    
+                    print((len(float_array)/3))
+                    num = 0
+                    for i in range(0, (len(float_array)) , 3):
+                        
+                        data = {str(num) + "X": str(float_array[i]), str(num) + "Y": str(float_array[i+1]),  str(num) + "Z" : str(float_array[i+2])}
+                        DataACCdic.update(data)
+                        num+=1
+                        
+                        if (num) == 85:
+                            self.envia_servico(json.dumps((DataACCdic)))
+                            DataACCdic = {}
+                            self.esvazia_memoria()
+                            
+                    self.envia_servico(json.dumps((DataACCdic)))    
+                    os.remove(self.dir + "/data/" + str(LoteX) + "/"  + pack)
+                    
+                except Exception as error:
+                    print("\n=>",error)                  
+
+                finally:
                 
-                for pac in DataACC:
-                    if "{" in  pac:
-                        #print("\n\n\n dados:" , pac,"###")
-                        
-                        if not(self.envia_servico(pac)):
-                            break
-                        
-                os.remove(self.dir + "/data/" + str(JOSNx) + "/"  + lt)
-            #os.remove(self.dir + "/data/" + str(JOSNx))
+                    input_file.close()
+                
+                
                 
        
         
+

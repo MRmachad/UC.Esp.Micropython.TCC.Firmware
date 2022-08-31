@@ -1,6 +1,7 @@
 from arquivos_py.onSd import OnSd
 from arquivos_py.faceI2C import FaceI2C
 from arquivos_py.acessWifi import AcessWifi
+from arquivos_py.acessServe import AcessServe
 
 
 from machine import Pin,RTC
@@ -13,29 +14,18 @@ import os
 
 id_esp = 1
 dir_padrao = '/'
-<<<<<<< HEAD
 _sd = "LUCAS E LEO"
 _passw = "785623ptbr"
 set_host = '192.168.100.8'
-=======
-_sd = "acess"
-_passw = "12345678"
-set_host = '192.168.63.227'
->>>>>>> 881c3b25a038aaddb79c94899165f1ce170535a9
 set_porta = 3060
 
 rtc = machine.RTC()
 deg = Pin(21, Pin.IN)
 led = Pin(2, Pin.OUT)
-<<<<<<< HEAD
-ContArquivosEnvio =  40
-=======
-ContArquivosEnvio = 1
->>>>>>> 881c3b25a038aaddb79c94899165f1ce170535a9
+ContArquivosEnvio =  1
 acorda = machine.Pin(27, mode = Pin.IN)
+card_SD = OnSd(dir_padrao, _ContArquivosEnvio = ContArquivosEnvio)                                               # mudar para /sd quando montar o filesystem 
 mp_esp = FaceI2C(dir = dir_padrao, gav = True, scale = 0, freqAmostra = 200, SDA_PIN = 25, SCL_PIN = 26)                                                 # mudar para /sd quando montar o filesystem  
-card_SD = OnSd(dir_padrao, _ContArquivosEnvio = ContArquivosEnvio, host_p = set_host, porta_p = set_porta)                                                            # mudar para /sd quando montar o filesystem 
-card_SD_envio = OnSd(dir_padrao, host_p = set_host, porta_p = set_porta)                                                                              # mudar para /sd quando montar o filesystem  
 
 
 def dormindo(islight = False):
@@ -62,7 +52,9 @@ def setupEnvio():
     pointWifi = AcessWifi(sd = _sd, passw = _passw)
     pointWifi.do_connect_STA()
     
-    card_SD_envio.enviaPacs()
+    acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta)                                                                              # mudar para /sd quando montar o filesystem  
+
+    acessServe.enviaPacs()
          
     dormindo()
 
@@ -93,10 +85,6 @@ def setupConfig():
 
 if __name__ == '__main__':
    
-<<<<<<< HEAD
-=======
-    print("\n=> Valor do pino de debug: ", deg.value())
->>>>>>> 881c3b25a038aaddb79c94899165f1ce170535a9
     led.value(deg.value())
     
     if(deg.value() == 1):
@@ -107,14 +95,10 @@ if __name__ == '__main__':
             print('\n=> Woke from a deep sleep \n') 
                  
             N_arqui_val = encapsulaLaco()
-            print("\n=> Quantidade de arquivos validos gravados em \data\JSONx: ", N_arqui_val)
+            print("\n=> Quantidade de arquivos validos gravados em \data\: ", N_arqui_val)
             
             if N_arqui_val >= ContArquivosEnvio: 
-<<<<<<< HEAD
           
-=======
-                    
->>>>>>> 881c3b25a038aaddb79c94899165f1ce170535a9
                 setupEnvio()
             else:
                 dormindo()
@@ -122,12 +106,6 @@ if __name__ == '__main__':
         else:
             print("\n=> Power on or hard reset")
             
-<<<<<<< HEAD
-=======
-            print("\n=> Valor do pino de debug: ", deg.value())
-            led.value(deg.value())
-            
->>>>>>> 881c3b25a038aaddb79c94899165f1ce170535a9
             setupConfig()
         
        

@@ -96,16 +96,10 @@ class FaceI2C():
         hora = Horario[4]
         min = Horario[5]
         seg = Horario[6]
-<<<<<<< HEAD
         micro = Horario[7]
         
         AmD = "{}-{}-{}".format(Ano, Mes, dia)
         HmS = "_{}:{}:{}:{}".format(hora, min, seg, micro)
-=======
-        
-        AmD = "{}-{}-{}".format(Ano, Mes, dia)
-        HmS = "_{}:{}:{}".format(hora, min, seg)
->>>>>>> 881c3b25a038aaddb79c94899165f1ce170535a9
         
         timer[0] = self.rtc.memory()
         self.rtc.memory(AmD + HmS)
@@ -162,9 +156,5 @@ class FaceI2C():
         print("\n=> Tempo estipulado para dormir: ", TempoEstipuladoDormir, " s\n")
         print("\n=> Tempo estipulado para Envio(P/ 110 conjunto de amostras): ", (TempoEstipuladoDormir*110)/3600, " H\n")
         print("\n=> Escala de aceleração : ", (self.setScale>>3))
-<<<<<<< HEAD
         print("\n=>Inicialização close")
-=======
-        print("Inicialização close")
->>>>>>> 881c3b25a038aaddb79c94899165f1ce170535a9
 

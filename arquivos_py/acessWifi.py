@@ -10,8 +10,11 @@ class AcessWifi():
     def do_connect_STA(self):
         
         wlan = network.WLAN(network.STA_IF)
-        wlan.active(True)
-        if not wlan.isconnected():
+        
+        if wlan.active() == False:
+            wlan.active(True)
+        
+       if not wlan.isconnected():
             print('connecting to network...')
             wlan.connect(self.sd, self.passw)
             while not wlan.isconnected():
@@ -24,3 +27,23 @@ class AcessWifi():
             print("\n=> Nao foi possivel sincronizar horario.\n", errontp)
             pass
         
+    def isStrengthRSSI(self, parametro = -50):
+        
+        wlan = network.WLAN(network.STA_IF)
+        wlan.active(True)
+  
+        VecTupRedes =  wlan.scan()
+        rssi = 0
+        for tup in VecTupRedes:
+            if tup[0].decode() == self.sd:
+                rssi = tup[3]
+                
+        if  rssi > parametro:
+            self.do_connect_STA()
+            return True
+        else:
+            return False
+                
+        
+            
+

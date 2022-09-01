@@ -50,11 +50,10 @@ def encapsulaLaco():
 def setupEnvio():
     
     pointWifi = AcessWifi(sd = _sd, passw = _passw)
-    pointWifi.do_connect_STA()
+    if pointWifi.isStrengthRSSI()
     
-    acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta)                                                                              # mudar para /sd quando montar o filesystem  
-
-    acessServe.enviaPacs()
+        acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta)                                                                              # mudar para /sd quando montar o filesystem  
+        acessServe.enviaPacs()
          
     dormindo()
 

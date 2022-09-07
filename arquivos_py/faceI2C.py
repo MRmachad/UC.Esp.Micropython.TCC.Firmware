@@ -1,9 +1,4 @@
 from machine import I2C, Pin, RTC
-import binascii
-import time
-import os
-import json
-
 
 class FaceI2C():
 
@@ -46,9 +41,6 @@ class FaceI2C():
         
         self.rtc = RTC()
         
-
-        
-            
     def writeto_mem_bit(self, end, Regis , data , destr = 0):
         #print("---------------")
         

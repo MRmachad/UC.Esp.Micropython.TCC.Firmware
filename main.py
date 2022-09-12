@@ -115,11 +115,9 @@ if __name__ == '__main__':
             print('\n=> Woke from a deep sleep \n')    
 
             if encapsulaLaco() == True:
-                
-                    print("\n=> Pode tentar enviar? Sim")
-                    if card_SD.contPasta >= ContArquivosEnvio:
-                        setupEnvio(card_SD.contPasta)
-                    dormindo()
+                print("\n=> Pode tentar enviar? Sim")
+                setupEnvio(card_SD.contPasta)
+                dormindo()
             else:
                 print("\n=> Pode tentar enviar? Não")
                 dormindo()

@@ -46,9 +46,6 @@ class FaceI2C():
         
         self.rtc = RTC()
         
-
-        
-            
     def writeto_mem_bit(self, end, Regis , data , destr = 0):
         #print("---------------")
         

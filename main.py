@@ -110,16 +110,17 @@ if __name__ == '__main__':
             print("estouro e flag ", isEstouro, FlagEnvio)
             print(os.listdir("./data"))
 
-            if FlagEnvio == True:  
-                setupEnvio()
-            else:
-                if isEstouro == True:
+            if isEstouro == True:
                     print("Estouro de Arquivo, preciso enviar...")
                     if setupEnvio():
                         card_SD.clearRECIC()
                     else:
                         card_SD.setRECIC()
                         card_SD.reiniciaContagemArquivo()
+            else:
+                if FlagEnvio == True:  
+                setupEnvio()
+                
             dormindo()
         else:
             print("\n=> Power on or hard reset")

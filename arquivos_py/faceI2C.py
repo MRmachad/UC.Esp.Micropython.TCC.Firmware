@@ -80,28 +80,15 @@ class FaceI2C():
     def Calendario(self):
         
         Horario = self.rtc.datetime()
-        #print("horário", Horario)
-        
         
         timer = [0]*2
         
-        #print(len(timer))
-        
-        Ano = Horario[0]
-        Mes = Horario[1]
-        dia = Horario[2]
-        hora = Horario[4]
-        min = Horario[5]
-        seg = Horario[6]
-        micro = Horario[7]
-        
-        AmD = "{}-{}-{}".format(Ano, Mes, dia)
-        HmS = "_{}:{}:{}:{}".format(hora, min, seg, micro)
+        AmD = "{}_{}_{}".format(Horario[0], Horario[1], Horario[2])
+        HmS = "_{}_{}_{}_{}".format(Horario[4], Horario[5], Horario[6], Horario[7])
         
         timer[0] = self.rtc.memory()
         self.rtc.memory(AmD + HmS)
         timer[1] = self.rtc.memory()
-       
         
         return timer
     

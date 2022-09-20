@@ -15,11 +15,12 @@ import os
 ########################### PARAMETROS DE USO ###########################
 id_esp = 1
 dir_padrao = '/'
-_sd = "LUCAS E LEO"
+_sd = "LUCAS E LEOr"
 _passw = "785623ptbr"
 set_host = '192.168.100.8'
 set_porta = 3060
-ContArquivosEnvio =  5
+ContArquivosEnvio =  2
+ConjuntoArquivosEnvio =  2
 ########################### PARAMETROS DE USO ###########################
 #
 #
@@ -42,25 +43,16 @@ def startEnvio():
     acessServe.enviaPacs()
     print("\n=> saiu no envio")    
 
-
-
 def verificaIntensidadeEnvio():
     pointWifi = AcessWifi(sd = _sd, passw = _passw)
     return pointWifi.isStrengthRSSI()
 
-def setupEnvio(numArquivoVal = 0):
-
-    if numArquivoVal >= ContArquivosEnvio:
-        print("Estouro de Arquivo, preciso enviar...")
-        while not verificaIntensidadeEnvio():
-            machine.lightsleep(10000)
+def setupEnvio():
+    if verificaIntensidadeEnvio():
         startEnvio()
-    else:
-        if verificaIntensidadeEnvio():
-            startEnvio()
-            card_SD.reiniciaContagemArquivo()
-        else:
-            print("\n=> Over RSSI")
+        card_SD.reiniciaContagemArquivo()
+        return True
+    return False
 
 def setupConfig():
     
@@ -76,8 +68,7 @@ def setupConfig():
         if "contPasta.txt" in os.listdir(dir_padrao):
             os.remove("./contPasta.txt")
         os.mkdir("./data")                                           
-        os.chdir("./data")
-        os.mkdir("./0") 
+
 
     pointWifi = AcessWifi(sd = _sd, passw = _passw)
     pointWifi.do_connect_STA()
@@ -90,7 +81,7 @@ def setupConfig():
 
 def encapsulaLaco():           
     AccX, AccY, AccZ, timer = mp_esp.pega_valor()    
-    return card_SD.preeencheARQ(id_esp, AccX, AccY, AccZ, timer)
+    return card_SD.preeencheARQ(id_esp, AccX, AccY, AccZ, timer, ConjuntoArquivosEnvio)
 
 def dormindo(islight = False):
     esp32.wake_on_ext0(pin = acorda, level = esp32.WAKEUP_ANY_HIGH)
@@ -113,14 +104,23 @@ if __name__ == '__main__':
 
         if machine.reset_cause() == machine.DEEPSLEEP_RESET:
             print('\n=> Woke from a deep sleep \n')    
+            
+            isEstouro, FlagEnvio = encapsulaLaco()
+            
+            print("estouro e flag ", isEstouro, FlagEnvio)
+            print(os.listdir("./data"))
 
-            if encapsulaLaco() == True:
-                print("\n=> Pode tentar enviar? Sim")
-                setupEnvio(card_SD.contPasta)
-                dormindo()
+            if FlagEnvio == True:  
+                setupEnvio()
             else:
-                print("\n=> Pode tentar enviar? Não")
-                dormindo()
+                if isEstouro == True:
+                    print("Estouro de Arquivo, preciso enviar...")
+                    if setupEnvio():
+                        card_SD.clearRECIC()
+                    else:
+                        card_SD.setRECIC()
+                        card_SD.reiniciaContagemArquivo()
+            dormindo()
         else:
             print("\n=> Power on or hard reset")
             setupConfig()

@@ -23,39 +23,31 @@ class AcessServe():
     
         for LoteX in sorted(os.listdir(self.dir + "/data")):
 
-            for packs in sorted(os.listdir(self.dir + "/data/" + LoteX)):
-                
-                input_file = open((self.dir + "/data/"+ str(LoteX) + "/" + packs), 'r+b')
+            pacBytes = ((170*3) + 15)
+            input_file = open((self.dir + "/data/" + LoteX), 'r+b')
+            nBytes = input_file.seek(0,2)
+            input_file.seek(0)
 
-                try:
+            try:
+                while input_file.tell() != nBytes:
                     
-                    bytesfile = input_file.read()
-                    float_array = array('f', struct.unpack((2*170*3*'f'), bytesfile))
-
-                    pack = [packs[2:packs.rfind("C")],packs[packs.rfind("C")+1:]]
-                   
+                    bytesfile = input_file.read(pacBytes*4)
+                    float_array = array('f', struct.unpack((pacBytes*'f'), bytesfile))               
                     
-                    
-                    for item in self.modelosStringJson(pack[0],float_array[:170*3]):
+                    self.esvazia_memoria()
+                    self.envia_servico(self.modelosStringJson(float_array))
                         
-                        self.esvazia_memoria()
-                        self.envia_servico(item)
+                    print("\n=> ponteiro atual envio :" ,  input_file.tell())
                     
-                    
-                    
-                    for item in self.modelosStringJson(pack[1],float_array[170*3:170*3*2]):
-                        self.esvazia_memoria()
-                        self.envia_servico(item)
+            except Exception as error:
+                print("\n=> Erro no setup de pacote: ", error)                  
 
-                    os.remove(self.dir + "/data/" + LoteX + "/"  + packs)
+            finally:
+                input_file.close()
                     
-                except Exception as error:
-                    print("\n=> Erro no setup de pacote: ", error)                  
-
-                finally:
-                    input_file.close()
+            os.remove(self.dir + "/data/" + LoteX)
     
-    def envia_servico(self, data_json, _tentativas = 6, sockTimeout = 10):
+    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 1):
 
         
         print("\nEntrou aqui\n")
@@ -105,142 +97,29 @@ class AcessServe():
         micropython.mem_info()
      
 
-    def modelosStringJson(self, pack, float_array, temperatura = 0, corte = 85):
-        _id = pack[pack.rfind("B")+1:]
-        TIni = self.pegaDate(pack[:pack.rfind("A")])
-        TFim = self.pegaDate(pack[pack.rfind("A")+1:pack.rfind("B")])
+    def modelosStringJson(self, float_array, temperatura = 0):
+        print("AQUI")
+        _id = int(float_array[0])
 
-        TDist = self.DistTimeStanp(TIni,TFim)
-        
-        processado = []
+        TIni =["{}-{}-{} {}:{}:{}".format(int(float_array[1]), int(float_array[2]), int(float_array[3]), int(float_array[4]), int(float_array[5]), (float_array[6] + float_array[7]/10000))]  
+        TFim =["{}-{}-{} {}:{}:{}".format(int(float_array[8]), int(float_array[9]), int(float_array[10]), int(float_array[11]), int(float_array[12]), (float_array[13] + float_array[14]/10000))]
+  
         data = []
         aux =  0
-        for cont in range(0,len(float_array), 3):
-            data.append({"horario": TDist[aux] ,"aceleracaoX": float_array[cont], "aceleracaoY": float_array[cont+1],  "aceleracaoZ" : float_array[cont+2], "temperatura": temperatura})
+        for cont in range(15,len(float_array), 3):
+            data.append({"aceleracaoX": float_array[cont], "aceleracaoY": float_array[cont+1],  "aceleracaoZ" : float_array[cont+2], "temperatura": temperatura})
             aux+=1
 
-        processado.append(self.juntaLinha(_id, data[:corte]))
-        processado.append(self.juntaLinha(_id, data[corte:]))    
-        return processado
-    
-    def juntaLinha(self, _id, data):
-        
-        idVaca = {"idVaca": int(_id)}
+        idVaca = {"idVaca": _id}
+        horaFin = {"horaFin": TFim }
+        horaIni = {"horaIni" : TIni}
         comportamentos = {"comportamentos": data}
-        quantidade = {"quantidade": len(data)}
+        quantidade = {"quantidade":int(len(float_array[15:])/3)}
 
-        quantidade.update(idVaca)
         quantidade.update(comportamentos)
+        quantidade.update(horaFin)
+        quantidade.update(horaIni)
+        quantidade.update(idVaca)
+
         return json.dumps(quantidade)
-            
-    def pegaDate(self, DAT = "2022_7_22_2_6_2"):
-        
-        print(DAT)
-        
-        date = []
-        for i in range(DAT.count("_")):
-            date.append(DAT[:DAT.find("_")])
-            DAT = DAT[DAT.find("_") + 1:]
-           
-        return [int(date[0]), int(date[1]), int(date[2]), int(date[3]), int(date[4]), float(date[5] + "." + DAT)]
-
-    def DistTimeStanp(self, TIni = {}, TFim = {}):
-
-        dif = self.divisao(self.subtracao(TIni, TFim), 170)
-
-        print("\n=> resto da divisão", dif)
-
-        aux = ["{}-{}-{} {}:{}:{}".format(TIni[0],TIni[1],TIni[2],TIni[3],TIni[4],TIni[5])]        
-        for i in range(170):
-            TIni = self.soma(TIni, dif)
-            aux.append("{}-{}-{} {}:{}:{}".format(TIni[0],TIni[1],TIni[2],TIni[3],TIni[4],TIni[5]))
-        
-        #print("\n => saida do DistTimeStanp", aux)
-        return aux 
-
-    def subtracao(self, data1, data2):
-        tempo = [0,0,0,0,0,0]
-        for i in range(6):
-            tempo[i] = data2[i] - data1[i]
-        # Segundos
-        for i in range (2):
-            if tempo[5-i] < 0:
-                tempo[4-i] = tempo[4-i] - 1
-                tempo[5-i] = 60 + tempo[5-i]
-        # Horas
-        if tempo[3] < 0:
-            tempo[2] = tempo[2] - 1
-            tempo[3] = 24 + tempo[3]
-        # Dias
-        if tempo[2] < 0:
-            cont = self.descobre_mes(data2[1], data2[0])
-            tempo[1] = tempo[1] - 1
-            tempo[2] = cont + tempo[2]
-        # Mes
-        if tempo[1] < 0:
-            tempo[0] = tempo[0] - 1
-            tempo[1] = 12 + tempo[1]
-        
-        return tempo
-
-    def soma(self, data1, valor):
-        tempo = [0,0,0,0,0,0]
-        for i in range(6):
-            tempo[i] = data1[i] + valor[i]
-        for i in range(2):
-            if tempo[5-i] >= 60:
-                tempo[5-i] = tempo[5-i] - 60
-                tempo[4-i] = tempo[4-i] + 1
-        if tempo[3] >= 24:
-            tempo[3] = tempo[3] - 24
-            tempo[2] = tempo[2] + 1
-        cont = self.descobre_mes(data1[1], data1[0])
-        if tempo[2] > cont:
-            tempo[2] = tempo[2] - cont
-            tempo[1] = tempo[1] + 1
-        if tempo[1] > 12:
-            tempo[1] = tempo[1] - 12
-            tempo[0] = tempo[0] + 1
-
-        return tempo
-
-    def divisao(self, data1, valor):
-        tempo = self.transf_segundos(data1)
-        div = tempo / valor
-        data = [0,0,0,0,0,0]
-        pesos = [12,30,24,60,60,1]
-        for a in range(6):
-            pesos_div = 1
-            for i in range(6-a):
-                pesos_div = pesos_div * pesos[i+a]
-            data[a] = int(div // pesos_div)
-            div = div % pesos_div
-        data[5] = data[5] + div
-        return data
-
-    def transf_segundos(self, data):
-        pesos = [12,30,24,60,60,1]
-        tempo = 0
-        for a in range(6):
-            segundos = 1
-            for i in range(6-a):
-                segundos = segundos * pesos[i+a]
-            tempo = data[a] * segundos + tempo
-        return tempo
-
-    def descobre_mes(self, mes, ano):
-        mes30 = [4, 6, 9, 11]
-        mes31 = [1, 3, 5, 7, 8, 10, 12]
-        cont = 0
-        for mes in mes30:
-            cont = 30
-        for mes in mes31:
-            cont = 31
-        if cont == 0:
-            res = ano % 4
-            if res == 0:
-                cont = 29
-        if cont == 0:
-            cont = 28
-        return cont
-
+    

@@ -10,89 +10,169 @@ class OnSd():
         self.ControleDeArquivos = _ContArquivosEnvio
         
         if "contPasta.txt" in os.listdir(self.dir):
-            self.contPasta = int(open(self.dir + "/contPasta.txt").read())    
+            self.contPasta = int(open(self.dir + "/contPasta.txt").read())  
         else:
             self.contPasta = 0
+            
+        if "RECIC.txt" in os.listdir(self.dir):
+            self.RECIC = int(open(self.dir + "/RECIC.txt").read())    
+        else:
+            self.RECIC = 0
 
-    def preeencheARQ(self, id_esp = 0, AccX = [], AccY = [], AccZ = [], timer = []):        
+    def preeencheARQ(self, id_esp = 0, AccX = [], AccY = [], AccZ = [], timers = [], _controleAmostras = 10):        
         
-        nameDateDataId =(timer[0].decode("utf-8").replace(":","_").replace("-","_") + "A" +
-                         timer[1].decode("utf-8").replace(":","_").replace("-","_")+ "B" + str(id_esp))
-        
-        floatlist = []
-        for Nacc in range(len(AccX)):
-            floatlist.append(AccX[Nacc])
-            floatlist.append(AccY[Nacc])
-            floatlist.append(AccZ[Nacc])
-        
-        self.auxSalvaDados(nameDateDataId, floatlist)
-        
-        return self.isNextPasta()
+        conjutoFloat = []
 
-    def auxSalvaDados(self, nameDateDataId = "", floatlist = []):
+        conjutoFloat.append(float(id_esp))
+
+        for timer in timers:
+            for i in range(timer.decode().count("_")):
+                
+                conjutoFloat.append(float(timer[:timer.decode().find("_")]))
+                timer = timer[timer.decode().find("_") + 1:]
+                
+            conjutoFloat.append(float(timer[:timer.decode().find("_")]))    
+        print(conjutoFloat)
         
-        dir_corrente = (self.dir + "/data/"+str(self.contPasta))
+        for i in range(len(AccX)):
+            conjutoFloat.append(AccX[i])
+            conjutoFloat.append(AccY[i])
+            conjutoFloat.append(AccZ[i])
+        
+        return self.auxSalvaDados(conjutoFloat, _controleAmostras)
+
+    def auxSalvaDados(self, _conjutoFloat = [], controleAmostras = 10):
+        
+        dir_corrente = (self.dir + "/data")
         on_diretorio_cor = os.listdir(dir_corrente)
         peso_dir = len(on_diretorio_cor)
         
+        print("\n=>self.contPasta = " , self.contPasta)
+        print("\n=>peso_dir = " , peso_dir)
+        print("\n=> RECIC: ", self.RECIC)
+        
         if peso_dir == 0:
-            float_array = array('f', floatlist)
-            self.finaliza_transicao((dir_corrente +"/0_"+ nameDateDataId), float_array)
+            float_array = array('f', _conjutoFloat)
+            self.finaliza_transicao((dir_corrente + "/0"), float_array)
             
         else:
-            if len(on_diretorio_cor[-1]) <= len("0_"+ nameDateDataId) + 5 :
+            if self.RECIC == 0:
 
-                input_file = open((dir_corrente +"/"+ on_diretorio_cor[-1]), 'r+b')
-                float_array_odd = array('f', struct.unpack((170*3*'f'), input_file.read()))
-                float_array = array('f', floatlist)
-                self.finaliza_transicao((dir_corrente +"/"+ on_diretorio_cor[-1] + "C" + nameDateDataId ), float_array + float_array_odd)
-                os.remove((dir_corrente +"/"+ on_diretorio_cor[-1]))
-            
+                input_file = open((dir_corrente +"/"+ on_diretorio_cor[-1]), 'a')
+                numbytes = input_file.seek(0,2)
+                
+                if (numbytes/2100) != controleAmostras :
+                    print("\n=> Numero de bytes: ", numbytes)
+
+                    float_array = array('f', _conjutoFloat)
+                    input_file.write(bytes(float_array))
+
+                    input_file.seek(0,2)
+                    
+                    numbytes = input_file.tell()
+                    print("\n=> numero de bytes pos insert", input_file.tell())
+
+                    input_file.close()
+
+                else:
+                    numbytes = 2100
+                    print("\n=> arquivo novo")
+                    float_array = array('f', _conjutoFloat)
+                    self.finaliza_transicao((dir_corrente +"/"+ str(peso_dir)), float_array)
+                
+                if (numbytes/2100) == controleAmostras:
+                    self.incrimentaContagemArquivo()
+                    
+                    if self.contPasta >= self.ControleDeArquivos:
+                        return True, False
+                    else:
+                        return False,True
             else:
-                float_array = array('f', floatlist)
-                self.finaliza_transicao((dir_corrente +"/"+ str(peso_dir) + "_" + nameDateDataId), float_array)
+
+                input_file = open((dir_corrente +"/"+ str(self.contPasta)), 'a')
+                numbytes = input_file.seek(0,2)
+                
+                if (numbytes/2100) != controleAmostras :
+                    print("\n=> Numero de bytes no RECIC: ", numbytes)
+                    
+                    float_array = array('f', _conjutoFloat)
+                    input_file.write(bytes(float_array))
+
+                    input_file.seek(0,2)
+                    numbytes = input_file.tell()
+                    
+                    print("\n=> numero de bytes pos insert no RECIC", input_file.tell())
+                    
+                    input_file.close()
+                    
+                if (numbytes/2100) == controleAmostras:
+                    self._incrimentaContagemArquivo()
+                    
+                    if self.contPasta >= self.ControleDeArquivos:
+                        return True, False
+                    else:
+                        return False,True
+
+        return False, False
+    
+    def setRECIC(self):
+        f = open((self.dir + "/RECIC.txt"), 'w')
+        f.write("1")
+        f.close()
         
+    def clearRECIC(self):
+        f = open((self.dir + "/RECIC.txt"), 'w')
+        f.write("0")
+        f.close()
+        
+    def getRECIC(self):
+        return int(open(self.dir + "/RECIC.txt").read())    
+ 
     def finaliza_transicao(self, dirNameDateDataId = "", float_array = []):
         while True:
+            try:
+                output_file = open(dirNameDateDataId, "w+b")
                 try:
-                    output_file = open(dirNameDateDataId, "w+b")
-                    try:
-                        output_file.write(bytes(float_array))
-                    finally:
-                         output_file.close()
-                    break
-                except Exception as error:
-                    print("\n=> ", error)
-                    pass
-                    
-    def isNextPasta(self):      
-        NaPasta = os.listdir(self.dir + "/data/"+str(self.contPasta))
-        if  len(NaPasta) >= 10: ########
-            if len(NaPasta[-1]) > 60:
-                if (self.contPasta+1) == self.ControleDeArquivos:
-                    self.reiniciaContagemArquivo()
-                else:
-                    self.incrimentaContagemArquivo()
-                return True
-            else:
-                return False
+                    output_file.write(bytes(float_array))
+                finally:
+                     output_file.close()
+                break
+            except Exception as error:
+                print("\n=> ", error)
+                pass
+
     
     def reiniciaContagemArquivo(self):
+        
         f = open((self.dir + "/contPasta.txt"), 'w')
-        f.write(str(0))
-        f.close() 
-        self.contPasta+=1
-
+        f.write("0")
+        f.close()
+        
+        f = open((self.dir + "/data/0"), 'w')
+        f.close()
+    
     def incrimentaContagemArquivo(self):
+        self.contPasta+=1
+        
         f = open((self.dir + "/contPasta.txt"), 'w')
         f.write(str(self.contPasta + 1))
         f.close()
+            
+
+    def _incrimentaContagemArquivo(self):
+        print("noREC")
         
         self.contPasta+=1
         
-        if (str(self.contPasta)) not in os.listdir(self.dir + "/data"):
-            os.chdir("./data")
-            os.mkdir("./" + str(self.contPasta))
+        f = open((self.dir + "/contPasta.txt"), 'w')
+        f.write(str(self.contPasta))
+        f.close()
+        
+        if self.contPasta != self.ControleDeArquivos:
+            f = open((self.dir + "/data/" + str(self.contPasta)), 'w')
+            f.close()
+            
+
 
     def contArq(self):
         return sorted(os.listdir(self.dir + "/data"))

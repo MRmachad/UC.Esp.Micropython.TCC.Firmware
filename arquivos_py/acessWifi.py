@@ -1,15 +1,19 @@
+from arquivos_py.dateTime import DateTime
+from machine import RTC
 import network
 import ntptime
 
 class AcessWifi():
     
-    def __init__(self, sd = "LUCAS E LEO", passw = "785623ptbr"):
+    def __init__(self, sd = "LUCAS E LEO", passw = "785623ptbr", tryDefault = False):
         self.sd = sd
+        self.tryDefault = tryDefault
         self.passw = passw
     
     def do_connect_STA(self):
         
         wlan = network.WLAN(network.STA_IF)
+        
         
         if wlan.active() == False:
             wlan.active(True)
@@ -20,12 +24,34 @@ class AcessWifi():
                 pass
         print('network config:', wlan.ifconfig())
         
-        try:
-            ntptime.settime()
-        except OSError as errontp:
-            print("\n=> Nao foi possivel sincronizar horario.\n", errontp)
-            pass
-        
+        if  self.tryDefault == True:
+            while True:
+                try:
+                    self.sincronizaHorario()
+                    break
+                except OSError as errontp:
+                    print("\n=> Nao foi possivel sincronizar horario.\n", errontp)
+                    pass
+        else:
+            try:
+                self.sincronizaHorario()
+            except OSError as errontp:
+                print("\n=> Nao foi possivel sincronizar horario.\n", errontp)
+                pass
+            
+    
+    def sincronizaHorario(self):
+        ntptime.settime()
+        rtc = RTC()
+
+        print(rtc.datetime())
+        dt = rtc.datetime()
+        cr = self.corrigeHorario((dt[0],dt[1],dt[2],dt[4],dt[5],dt[6]))
+        print(dt,cr)
+        rtc.datetime((cr[0],cr[1],cr[2],dt[3],cr[3],cr[4],cr[5],dt[7]))
+
+        print("Hora Setada", rtc.datetime())
+
     def isStrengthRSSI(self, parametro = -90):
         
         wlan = network.WLAN(network.STA_IF)
@@ -43,3 +69,12 @@ class AcessWifi():
         
         wlan.active(False)
         return False
+
+
+    def corrigeHorario(self, dt = []):
+
+        dateTime = DateTime()
+
+        dt = dateTime.subtracao([0,0,0,3,0,0],dt)
+            
+        return (dt[0],dt[1],dt[2],dt[3],dt[4],dt[5])

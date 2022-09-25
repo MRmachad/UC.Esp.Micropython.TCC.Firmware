@@ -136,7 +136,6 @@ class OnSd():
             except Exception as error:
                 print("\n=> ", error)
                 pass
-
     
     def reiniciaContagemArquivo(self):
         
@@ -154,7 +153,6 @@ class OnSd():
         f.write(str(self.contPasta + 1))
         f.close()
             
-
     def _incrimentaContagemArquivo(self):
         print("noREC")
         
@@ -168,8 +166,6 @@ class OnSd():
             f = open((self.dir + "/data/" + str(self.contPasta)), 'w')
             f.close()
             
-
-
     def contArq(self):
         return sorted(os.listdir(self.dir + "/data"))
     

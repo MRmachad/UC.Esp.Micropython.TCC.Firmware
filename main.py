@@ -3,6 +3,7 @@ from arquivos_py.faceI2C import FaceI2C
 from arquivos_py.acessWifi import AcessWifi
 from arquivos_py.acessServe import AcessServe
 
+
 from machine import Pin
 import micropython
 import esp32
@@ -15,10 +16,11 @@ import os
 ########################### PARAMETROS DE USO ###########################
 id_esp = 1
 dir_padrao = '/'
-_sd = "LUCAS E LEOr"
+_sd = "LUCAS E LEO"
 _passw = "785623ptbr"
-set_host = '192.168.100.8'
-set_porta = 3060
+set_host = '45.166.184.6'
+set_porta = 2041
+rota = "pink-ws/producao/comportamento"
 ContArquivosEnvio =  2
 ConjuntoArquivosEnvio =  2
 ########################### PARAMETROS DE USO ###########################
@@ -37,7 +39,7 @@ mp_esp = FaceI2C(dir = dir_padrao, gav = True, scale = 0, freqAmostra = 200, SDA
 #
 
 def startEnvio():
-    acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta)  
+    acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta, _rota = rota)  
 
     print("\n=> entrou no envio")                                                                      
     acessServe.enviaPacs()
@@ -70,7 +72,7 @@ def setupConfig():
         os.mkdir("./data")                                           
 
 
-    pointWifi = AcessWifi(sd = _sd, passw = _passw)
+    pointWifi = AcessWifi(sd = _sd, passw = _passw, tryDefault = True)
     pointWifi.do_connect_STA()
     
     mp_esp.Calendario()
@@ -119,7 +121,7 @@ if __name__ == '__main__':
                         card_SD.reiniciaContagemArquivo()
             else:
                 if FlagEnvio == True:  
-                setupEnvio()
+                    setupEnvio()
                 
             dormindo()
         else:

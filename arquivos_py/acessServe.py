@@ -14,11 +14,12 @@ class AcessServe():
 
     sock = socket.socket()
     
-    def __init__(self, dir = "/", host = "192.168.100.8", porta = 3060):
+    def __init__(self, dir = "/", host = "45.166.184.6", _rota = "pink-ws/producao/comportamento", porta = 2041):
         self.dir = dir
         self.host = host
         self.porta = porta
-    
+        self.rota = _rota
+        
     def enviaPacs(self):
     
         for LoteX in sorted(os.listdir(self.dir + "/data")):
@@ -47,7 +48,7 @@ class AcessServe():
                     
             os.remove(self.dir + "/data/" + LoteX)
     
-    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 1):
+    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 10):
 
         
         print("\nEntrou aqui\n")
@@ -66,16 +67,17 @@ class AcessServe():
         
         if tentativas != 0:
 
-            headers = ("POST /envio HTTP/1.1\r\nContent-Type: {}\r\nContent-Length: {}\r\nHost: {}\r\nAccept: */*\r\nConnection: close\r\n\r\n").format("application/json", len(data_json), (self.host + ":" + str(self.porta)))
+            headers = ("POST /{} HTTP/1.1\r\nContent-Type: {}\r\nContent-Length: {}\r\nHost: {}\r\nAccept: */*\r\nConnection: close\r\n\r\n").format(self.rota,"application/json", len(data_json), (self.host + ":" + str(self.porta)))
             self.esvazia_memoria()
-            
-            print(len(data_json))
+            print(headers)
+            print(data_json)
             self.sock.sendall('{}{}'.format(headers, data_json).encode())
             payload = 0
-            
+
             try:
                 response = self.sock.recv(1000)
-            
+                print("resposta", response.decode())
+                 
             except MemoryError as errin:
                 print("\n=> Não foi possivel alocar memoria para resposta", errin)
                 pass
@@ -101,25 +103,53 @@ class AcessServe():
         print("AQUI")
         _id = int(float_array[0])
 
-        TIni =["{}-{}-{} {}:{}:{}".format(int(float_array[1]), int(float_array[2]), int(float_array[3]), int(float_array[4]), int(float_array[5]), (float_array[6] + float_array[7]/10000))]  
-        TFim =["{}-{}-{} {}:{}:{}".format(int(float_array[8]), int(float_array[9]), int(float_array[10]), int(float_array[11]), int(float_array[12]), (float_array[13] + float_array[14]/10000))]
-  
         data = []
         aux =  0
         for cont in range(15,len(float_array), 3):
-            data.append({"aceleracaoX": float_array[cont], "aceleracaoY": float_array[cont+1],  "aceleracaoZ" : float_array[cont+2], "temperatura": temperatura})
+            data.append({"hora": "" , "aceleracaoX": float_array[cont], "aceleracaoY": float_array[cont+1],  "aceleracaoZ" : float_array[cont+2], "temperatura": temperatura})
             aux+=1
 
         idVaca = {"idVaca": _id}
-        horaFin = {"horaFin": TFim }
-        horaIni = {"horaIni" : TIni}
+        
+   
+        ano1 = {"ano1":int(float_array[1])}
+        mes1 = {"mes1":int(float_array[2])}
+        dia1 = {"dia1":int(float_array[3])}
+        hora1 = {"hora1":int(float_array[4])}
+        minuto1 = {"minuto1":int(float_array[5])}
+        segundo1 = {"segundo1":int(float_array[6])}
+        milisegundo1 = {"milisegundo1":int(float_array[7]/100)}
+
+        ano2 = {"ano2":int(float_array[8])}
+        mes2 = {"mes2":int(float_array[9])}
+        dia2 = {"dia2":int(float_array[10])}
+        hora2 = {"hora2":int(float_array[11])}
+        minuto2 = {"minuto2":int(float_array[12])}
+        segundo2 = {"segundo2":int(float_array[13])}
+        milisegundo2 = {"milisegundo2":int(float_array[14]/100)}
+        
         comportamentos = {"comportamentos": data}
         quantidade = {"quantidade":int(len(float_array[15:])/3)}
 
         quantidade.update(comportamentos)
-        quantidade.update(horaFin)
-        quantidade.update(horaIni)
+
         quantidade.update(idVaca)
+
+        quantidade.update(ano1)
+        quantidade.update(mes1)
+        quantidade.update(dia1)
+        quantidade.update(hora1)
+        quantidade.update(minuto1)
+        quantidade.update(segundo1)
+        quantidade.update(milisegundo1)
+
+        quantidade.update(ano2)
+        quantidade.update(mes2)
+        quantidade.update(dia2)
+        quantidade.update(hora2)
+        quantidade.update(minuto2)
+        quantidade.update(segundo2)
+        quantidade.update(milisegundo2)
 
         return json.dumps(quantidade)
     

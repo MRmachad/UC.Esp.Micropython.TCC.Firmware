@@ -18,11 +18,12 @@ id_esp = 1
 dir_padrao = '/'
 _sd = "LUCAS E LEOr"
 _passw = "785623ptbr"
-set_host = '192.168.100.8'
-set_porta = 3060
+set_host = '45.166.184.6'
+set_porta = 2041
+rota = "pink-ws/producao/comportamento"
 ContArquivosEnvio =  20
 ConjuntoArquivosEnvio =  40
-minParaEnvio = 10
+minParaEnvio = 3
 FlagEnvio = False
 ########################### PARAMETROS DE USO ###########################
 #
@@ -41,7 +42,7 @@ mp_esp = FaceI2C(dir = dir_padrao, gav = True, scale = 0, freqAmostra = 200, SDA
 #
 
 def startEnvio():
-    acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta)  
+    acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta, _rota = rota)  
 
     print("\n=>Entrou no envio")                                                                      
     acessServe.enviaPacs()
@@ -76,7 +77,7 @@ def setupConfig():
         os.mkdir("./data")                                           
 
 
-    pointWifi = AcessWifi(sd = _sd, passw = _passw)
+    pointWifi = AcessWifi(sd = _sd, passw = _passw, tryDefault = True)
     pointWifi.do_connect_STA()
 
     op.guardTimerIRQ(mp_esp.Calendario()[1])
@@ -134,7 +135,7 @@ if __name__ == '__main__':
                         card_SD.reiniciaContagemArquivo()
             else:
                 if FlagEnvio == True:  
-                setupEnvio()
+                    setupEnvio()
                 
             dormindo()
         else:

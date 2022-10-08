@@ -6,11 +6,11 @@ import socket
 import struct
 import micropython
 from array import array
+from arquivos_py.log import Log
+from arquivos_py.onSd import OnSd
 
 
-
-
-class AcessServe():
+class AcessServe(Log):
 
     sock = socket.socket()
     
@@ -19,10 +19,16 @@ class AcessServe():
         self.host = host
         self.porta = porta
         self.rota = _rota
+        self.OB_Card = OnSd(self.dir)      
         
     def enviaPacs(self):
+
+        aux_rename = 0
+        flag_falha = False
     
-        for LoteX in sorted(os.listdir(self.dir + "/data")):
+        for LoteX in self.OB_Card.contArq():
+            
+            print("Lotex :", LoteX)
 
             pacBytes = ((170*3) + 15)
             input_file = open((self.dir + "/data/" + LoteX), 'r+b')
@@ -36,23 +42,37 @@ class AcessServe():
                     float_array = array('f', struct.unpack((pacBytes*'f'), bytesfile))               
                     
                     self.esvazia_memoria()
-                    self.envia_servico(self.modelosStringJson(float_array))
-                        
-                    print("\n=> ponteiro atual envio :" ,  input_file.tell())
-                    
-            except Exception as error:
-                print("\n=> Erro no setup de pacote: ", error)                  
+                    if not(self.envia_servico(self.modelosStringJson(float_array))):
+                        flag_falha = True
+                        break
+
+            except Exception as errorENV:
+
+                error = ("\n=> Erro no setup de pacote: " + str(errorENV))  
+                self.addLog("AcessServe.txt", error)                
 
             finally:
                 input_file.close()
-                    
-            os.remove(self.dir + "/data/" + LoteX)
-    
-    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 10):
 
-        
-        print("\nEntrou aqui\n")
-        
+
+            if not(flag_falha):    
+
+                os.remove(self.dir + "/data/" + LoteX)
+
+            else:
+
+                if str(aux_rename) not in self.OB_Card.contArq():
+
+                    os.rename((self.dir + "/data/" + LoteX), (self.dir + "/data/" + str(aux_rename)))
+                    aux_rename+=1
+
+                else:
+                    aux_rename+=1
+
+        return aux_rename
+
+    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 2):
+
         tentativas = _tentativas
         while tentativas:
             try:
@@ -60,26 +80,27 @@ class AcessServe():
                 self.sock.settimeout(sockTimeout)
                 self.sock.connect((self.host,  self.porta))
                 break
+
             except Exception as error:
-                print("\n=> Tentativa N: ",(_tentativas-tentativas)," ||Conecção com o serviço http em falha, erro: " , error)
+                print("\n=> Tentativa N: ",(_tentativas-tentativas)," ||Conecção com o serviço http em falha, erro: " , error)  
                 tentativas -= 1
                 pass
         
         if tentativas != 0:
-
+            print("nas tentativas")
             headers = ("POST /{} HTTP/1.1\r\nContent-Type: {}\r\nContent-Length: {}\r\nHost: {}\r\nAccept: */*\r\nConnection: close\r\n\r\n").format(self.rota,"application/json", len(data_json), (self.host + ":" + str(self.porta)))
             self.esvazia_memoria()
-            print(headers)
-            print(data_json)
+
             self.sock.sendall('{}{}'.format(headers, data_json).encode())
             payload = 0
 
             try:
+                self.sock.settimeout(sockTimeout)
                 response = self.sock.recv(1000)
-                print("resposta", response.decode())
                  
-            except MemoryError as errin:
-                print("\n=> Não foi possivel alocar memoria para resposta", errin)
+            except MemoryError as errorMEM:
+                error = ("\n=> Não foi possivel alocar memoria para resposta" + str(errorMEM))
+                self.addLog("AcessServe.txt",error)   
                 pass
 
             else:
@@ -87,20 +108,22 @@ class AcessServe():
                     print(response.decode())
                     pass
                 else:
-                    pass
                     print("\n=> Sem ERRO no micro, mas ERRO no Seriço HTTP\n")            
+                    pass
             finally:    
                 self.sock.close()
                 return True
+        else:
+            error = ("\n=> falha na conecção com o serviço")
+            self.addLog("AcessServe.txt",error)   
         return False
 
     def esvazia_memoria(self):
         gc.collect()
         micropython.mem_info()
      
-
     def modelosStringJson(self, float_array, temperatura = 0):
-        print("AQUI")
+
         _id = int(float_array[0])
 
         data = []
@@ -109,7 +132,7 @@ class AcessServe():
             data.append({"hora": "" , "aceleracaoX": float_array[cont], "aceleracaoY": float_array[cont+1],  "aceleracaoZ" : float_array[cont+2], "temperatura": temperatura})
             aux+=1
 
-        idVaca = {"idVaca": _id}
+        idVaca = {"id_vaca": _id}
         
    
         ano1 = {"ano1":int(float_array[1])}

@@ -135,6 +135,7 @@ class FaceI2C():
         
         FrequenciaAmostragem = (1000/(self.ratedFreq+1))
         TempoEstipuladoDormir = (1024/(FrequenciaAmostragem*6))
+        
         print("\n=> Conversão pra gravidade ? ", self.convToGav)
         print("\n=> Frequencia de amostragem : ", FrequenciaAmostragem, "Hz")
         print("\n=> Tempo estipulado para dormir: ", TempoEstipuladoDormir, " s\n")

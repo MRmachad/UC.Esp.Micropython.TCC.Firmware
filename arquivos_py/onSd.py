@@ -1,8 +1,9 @@
 import os
 import struct
 from array import array
+from arquivos_py.log import Log
 
-class OnSd():
+class OnSd(Log):
     
     def __init__(self, dir = "/", _ContArquivosEnvio = 0):
         
@@ -32,7 +33,6 @@ class OnSd():
                 timer = timer[timer.decode().find("_") + 1:]
                 
             conjutoFloat.append(float(timer[:timer.decode().find("_")]))    
-        print(conjutoFloat)
         
         for i in range(len(AccX)):
             conjutoFloat.append(AccX[i])
@@ -43,8 +43,9 @@ class OnSd():
 
     def auxSalvaDados(self, _conjutoFloat = [], controleAmostras = 10):
         
+         
         dir_corrente = (self.dir + "/data")
-        on_diretorio_cor = os.listdir(dir_corrente)
+        on_diretorio_cor = self.contArq()
         peso_dir = len(on_diretorio_cor)
         
         print("\n=>self.contPasta = " , self.contPasta)
@@ -57,12 +58,13 @@ class OnSd():
             
         else:
             if self.RECIC == 0:
+                
+                print("\n=> ultimo Diretorio ", on_diretorio_cor[-1])
 
-                input_file = open((dir_corrente +"/"+ on_diretorio_cor[-1]), 'a')
+                input_file = open((dir_corrente +"/"+ str(on_diretorio_cor[-1])), 'a')
                 numbytes = input_file.seek(0,2)
                 
                 if (numbytes/2100) != controleAmostras :
-                    print("\n=> Numero de bytes: ", numbytes)
 
                     float_array = array('f', _conjutoFloat)
                     input_file.write(bytes(float_array))
@@ -72,13 +74,13 @@ class OnSd():
                     numbytes = input_file.tell()
                     print("\n=> numero de bytes pos insert", input_file.tell())
 
-                    input_file.close()
-
                 else:
                     numbytes = 2100
-                    print("\n=> arquivo novo")
                     float_array = array('f', _conjutoFloat)
                     self.finaliza_transicao((dir_corrente +"/"+ str(peso_dir)), float_array)
+
+                
+                input_file.close()
                 
                 if (numbytes/2100) == controleAmostras:
                     self.incrimentaContagemArquivo()
@@ -91,7 +93,6 @@ class OnSd():
                 numbytes = input_file.seek(0,2)
                 
                 if (numbytes/2100) != controleAmostras :
-                    print("\n=> Numero de bytes no RECIC: ", numbytes)
                     
                     float_array = array('f', _conjutoFloat)
                     input_file.write(bytes(float_array))
@@ -99,9 +100,7 @@ class OnSd():
                     input_file.seek(0,2)
                     numbytes = input_file.tell()
                     
-                    print("\n=> numero de bytes pos insert no RECIC", input_file.tell())
-                    
-                    input_file.close()
+                input_file.close()
                     
                 if (numbytes/2100) == controleAmostras:
                     self._incrimentaContagemArquivo()
@@ -134,27 +133,26 @@ class OnSd():
                      output_file.close()
                 break
             except Exception as error:
-                print("\n=> ", error)
+                self.addLog("onSD.txt", str(error)) 
                 pass
     
-    def reiniciaContagemArquivo(self):
+    def reiniciaContagemArquivo(self, naPasta = 0):
         
         f = open((self.dir + "/contPasta.txt"), 'w')
-        f.write("0")
+        f.write(str(naPasta))
         f.close()
         
-        f = open((self.dir + "/data/0"), 'w')
+        f = open((self.dir + "/data/" + str(naPasta)), 'w')
         f.close()
     
     def incrimentaContagemArquivo(self):
         self.contPasta+=1
         
         f = open((self.dir + "/contPasta.txt"), 'w')
-        f.write(str(self.contPasta + 1))
+        f.write(str(self.contPasta))
         f.close()
             
     def _incrimentaContagemArquivo(self):
-        print("noREC")
         
         self.contPasta+=1
         
@@ -162,12 +160,14 @@ class OnSd():
         f.write(str(self.contPasta))
         f.close()
         
-        if self.contPasta != self.ControleDeArquivos:
+        if self.contPasta < self.ControleDeArquivos:
             f = open((self.dir + "/data/" + str(self.contPasta)), 'w')
             f.close()
             
     def contArq(self):
-        return sorted(os.listdir(self.dir + "/data"))
+        on_diretorio_cor = [int(i) for i in os.listdir(self.dir + "/data")]
+        on_diretorio_cor.sort()
+        return [str(i) for i in on_diretorio_cor]
     
     
         

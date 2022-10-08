@@ -1,7 +1,9 @@
+from machine import RTC
+from array import array
+import struct
+
 class DateTime():
-    def __init__(self):
-        pass
-        
+
     def subtracao(self, data1, data2):
         tempo = [0,0,0,0,0,0]
         for i in range(6):
@@ -87,3 +89,44 @@ class DateTime():
         if cont == 0:
             cont = 28
         return cont
+
+    def summ(self, hour = 0, add = 0):
+        tempo = hour + add
+        if tempo >= 24:
+            tempo -= 24
+        return tempo
+
+    def sub(self, hour = 0, menus = 0):
+        tempo = hour - menus
+        if tempo < 0:
+            tempo += 24
+        return tempo
+    
+    def GuardaHorarioCorrente(self, cr = []):
+        rtc = RTC()
+        dt = rtc.datetime()
+        print(dt)
+        print(cr)
+        float_array = array('i', [cr[0],cr[1],cr[2],dt[3],cr[3],cr[4],cr[5],cr[6]])
+        
+        try:
+            output_file = open("./DataCorrente", "wb")
+            output_file.write(bytes(float_array))
+
+        except Exception as error:
+            self.addLog("DateTime.txt", str(error)) 
+            pass
+        finally:
+            output_file.close()
+            
+    def RecuperaHorarioCorrente(self):
+        rtc = RTC()
+        
+        input_file = open("./DataCorrente", 'r+b')
+        bytesfile = input_file.read()
+        int_array = array('i', struct.unpack((8*'i'), bytesfile))
+        print(int_array)
+        
+        rtc.datetime((int_array[0],int_array[1],int_array[2],int_array[3],int_array[4],int_array[5],int_array[6],int_array[7]))
+        print("\n=>Hora Setada", rtc.datetime())
+       

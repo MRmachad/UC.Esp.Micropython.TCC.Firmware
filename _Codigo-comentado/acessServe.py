@@ -9,25 +9,38 @@ from array import array
 from arquivos_py.log import Log
 from arquivos_py.onSd import OnSd
 
-
+"""
+Classe destinada a interface com o serviço remoto via HTTP, aqui são definido tanto a porta de entrada quanto o endereço web do host pra que possamos envia os dados com requisição 
+POST utilizando jsons para enpacotar os dados 
+"""
 class AcessServe(Log):
 
     sock = socket.socket()
-    
-    def __init__(self, dir = "/", host = "45.166.184.6", _rota = "pink-ws/producao/comportamento", porta = 2041, ConjAmostra = 10):
+ 
+"""
+def __init__(self, host = str('192.168.100.8'), porta = 3040):
+        Por padrão setamos a porta e o ip da maquina ontem o serviço esta rodando como 45.166.184.6 e porta 2041 ( que são as vias publicas do serviço que roda na fazenda)
+        estes agumentos podem ser passados como paramentro na instacialização do objeto "AcessServe".
+        Alem disso criamos um objeto(OB__card) do qual se fara uso para ler os dados armazenados em disco
+"""   
+    def __init__(self, dir = "/", host = "45.166.184.6", _rota = "pink-ws/producao/comportamento", porta = 2041):
         self.dir = dir
         self.host = host
         self.porta = porta
         self.rota = _rota
-        self.ConjAmostra = ConjAmostra
         self.OB_Card = OnSd(self.dir)      
-        
+  
+"""
+    def enviaPacs(self):
+        É por meio deste metodo que os dados são lidos da flash e então são enviados. Isto é feito abrindo arquivo por arquivo os dados que são guardado e iterando conjunto por  conjunto no arquivo este
+        e estes dados em formato de bytes são direcionados ao metodo modelosStringJson para que esse bytes sejam retornados para o Envia_servico  em formato de json string
+"""
     def enviaPacs(self):
 
         aux_rename = 0
         flag_falha = False
     
-        for LoteX in self.OB_Card.contArq():
+        for LoteX in self.OB_Card.contArq():    # Recebe um vetor com os arquivos com a referencia dos arquivos nesta pasta
             
             print("Lotex :", LoteX)
 
@@ -39,12 +52,12 @@ class AcessServe(Log):
             try:
                 while input_file.tell() != nBytes:
                     
-                    bytesfile = input_file.read(pacBytes*4)
+                    bytesfile = input_file.read(pacBytes*4)                                #Lê os dados interando com o tmanho dos conjuntos de daods  e transforma isso em uma cadeia de array
                     float_array = array('f', struct.unpack((pacBytes*'f'), bytesfile))               
                     
                     self.esvazia_memoria()
                     if not(self.envia_servico(self.modelosStringJson(float_array))):
-                        flag_falha = True
+                        flag_falha = True                                                  #Caso ocorra algum erro no envio ao serviço ele seta a flag de flash e para a iteranção do arquivo corrente pra se lançar em outro        
                         break
 
             except Exception as errorENV:
@@ -58,24 +71,26 @@ class AcessServe(Log):
 
             if not(flag_falha):    
 
-                os.remove(self.dir + "/data/" + LoteX)
+                os.remove(self.dir + "/data/" + LoteX)                                      #caso não aja falha ele remove o arquivo e libera armazenamento
 
             else:
-                if nBytes >= self.ConjAmostra*2100:
-                    if str(aux_rename) not in self.OB_Card.contArq():
 
-                        os.rename((self.dir + "/data/" + LoteX), (self.dir + "/data/" + str(aux_rename)))
-                        aux_rename+=1
+                if str(aux_rename) not in self.OB_Card.contArq():
 
-                    else:
-                        aux_rename+=1
+                    os.rename((self.dir + "/data/" + LoteX), (self.dir + "/data/" + str(aux_rename)))   #Caso tenha ocorrido algum erro ele envia o arquivo para o começo da seguencia da pasta renomenado e incrmentando a partir de zero
+                    aux_rename+=1
+
                 else:
-                    return aux_rename, False
-        return aux_rename, True
+                    aux_rename+=1                                   #Caso a numeração do arquivo ainda esteja na refencia de pasta quer dizer que o erro foi nele e desta forma apenas se incrmenta o auxiliar de rename para que caso ocorrora algum erro posterior em outro arquivo ele seja colocado depois e em seguencia do mesmo 
 
+        return aux_rename
+
+"""
+    def envia_servico(self, data_json):
+        Cria uma instancia do obejto "socket" que funciona como especie de curso ou browser da internet, nele podemos fazer requisiçoes web montando cabeçalho e dados comos se queira.
+"""
     def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 2):
-        
-        status = False
+
         tentativas = _tentativas
         while tentativas:
             try:
@@ -109,31 +124,39 @@ class AcessServe(Log):
             else:
                 if "OK" in response.decode():
                     print(response.decode())
-                    status = True
                     pass
                 else:
                     print("\n=> Sem ERRO no micro, mas ERRO no Seriço HTTP\n")            
                     pass
             finally:    
                 self.sock.close()
-                
+                return True
         else:
             error = ("\n=> falha na conecção com o serviço")
-            self.addLog("AcessServe.txt",error)
-            
-        return status
+            self.addLog("AcessServe.txt",error)   
+        return False
 
+"""
+    Força a coleta do GC
+
+"""
     def esvazia_memoria(self):
         gc.collect()
         micropython.mem_info()
      
+"""
+    def modelosStringJson(self, float_array, temperatura = 0):
+        Esta classe recebe e trata os dados referente ao conjunto de dados e o tranforma em uma string json 
+"""
     def modelosStringJson(self, float_array, temperatura = 0):
 
         _id = int(float_array[0])
 
         data = []
         aux =  0
-        for cont in range(15,len(float_array), 3):
+
+        # Cria um dicionario com repectivamente  com os dados de acereleção no formato esperado pelo serviço  e em seguida com catena com as demais partes 
+        for cont in range(15,len(float_array), 3): 
             data.append({"hora": "" , "aceleracaoX": float_array[cont], "aceleracaoY": float_array[cont+1],  "aceleracaoZ" : float_array[cont+2], "temperatura": temperatura})
             aux+=1
 
@@ -178,6 +201,8 @@ class AcessServe(Log):
         quantidade.update(minuto2)
         quantidade.update(segundo2)
         quantidade.update(milisegundo2)
+
+        #Este ultimo comando pega todo o dicionario criado e o transforma em uma string no fato json
 
         return json.dumps(quantidade)
     

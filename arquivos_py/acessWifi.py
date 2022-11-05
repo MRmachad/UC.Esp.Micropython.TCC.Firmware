@@ -63,7 +63,7 @@ class AcessWifi(Log):
 
         print("\n=>Hora Setada", rtc.datetime())
 
-    def isStrengthRSSI(self, parametro = -60):
+    def isStrengthRSSI(self, parametro = -95):
         
         wlan = network.WLAN(network.STA_IF)
         wlan.active(True)

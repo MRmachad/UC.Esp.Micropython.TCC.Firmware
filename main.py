@@ -22,11 +22,11 @@ SENHA = "785623ptbr"
 HOST = '45.166.184.6'
 URL = "comportamento"
 
-ID_VACA = 1
+ID_VACA = 6
 PORTA = 2037
-ZONEPOINTHOUR = (2,6,14,21)
-QTDARQUIVOS =  21
-QTDACONJUNTO =  5
+ZONEPOINTHOUR = (2,6,19,21)
+QTDARQUIVOS = 21
+QTDACONJUNTO = 39
 
 ########################### PARAMETROS DE USO ###########################
 #
@@ -37,7 +37,7 @@ OB_Pino_Debug = Pin(25, Pin.IN)
 OB_Pino_Led = Pin(14, Pin.OUT)
 OB_Pino_INT = machine.Pin(13, mode = Pin.IN)
 OB_Card = OnSd(DIR_PADRAO, _ContArquivosEnvio = QTDARQUIVOS)                                              
-OB_Interface_I2C = FaceI2C(dir = DIR_PADRAO, gav = True, scale = 0, freqAmostra = 100, SDA_PIN = 21, SCL_PIN = 22)     
+OB_Interface_I2C = FaceI2C(dir = DIR_PADRAO, gav = True, scale = 0, freqAmostra = 200, SDA_PIN = 21, SCL_PIN = 22)     
 ######################## PARAMETROS DE HARDWARE ###########################                                       
 #
 #
@@ -61,7 +61,8 @@ def SetupEnvio(FlagEstouro, FlagEnvio):
         if OB_Interface_WF.isStrengthRSSI():
             acessServe = AcessServe(DIR_PADRAO, host = HOST, porta = PORTA,  _rota = URL, ConjAmostra = QTDACONJUNTO)                                                              
             point_pasta, Reinicia = acessServe.enviaPacs()
-
+            
+            print("POINT PASTA",point_pasta)
             if point_pasta != QTDARQUIVOS:
                 print("envio incompleto ou completo", point_pasta)
                 OB_Card.clearRECIC()
@@ -88,7 +89,8 @@ def SetupEnvio(FlagEstouro, FlagEnvio):
                     OB_Card.clearRECIC()
                     if Reinicia == True:
                         OB_Card.reiniciaContagemArquivo(point_pasta)
-
+                    else:
+                        OB_Card.setContagemArquivo(point_pasta)
 
 def SetupConfig():
     
@@ -135,7 +137,7 @@ def EncapsulaLaco():
 
     AccX, AccY, AccZ, timer = OB_Interface_I2C.pega_valor()   
 
-    return OB_Card.preeencheARQ(ID_VACA, AccX, AccY, AccZ, timer, QTDACONJUNTO), (isInMancha(timer[1], ZONEPOINTHOUR) and OB_Card.contPasta >= 1)
+    return OB_Card.preeencheARQ(ID_VACA, AccX, AccY, AccZ, timer, QTDACONJUNTO), (isInMancha(timer[1], ZONEPOINTHOUR) and OB_Card.contPasta >= 2)
 
 def isInMancha(_timer = "", _zonePointHour = []):
 
@@ -157,7 +159,7 @@ def isInMancha(_timer = "", _zonePointHour = []):
 
     for pointHour in _zonePointHour:
 
-        if dt[3] in (OB_DateTime.sub(pointHour, 1), pointHour, OB_DateTime.summ(pointHour, 1)):
+        if dt[3] in (OB_DateTime.sub(pointHour, 1), pointHour):
             return True
     return False
 

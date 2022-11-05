@@ -29,7 +29,7 @@ class AcessServe(Log):
     
         for LoteX in self.OB_Card.contArq():
             
-            print("Lotex :", LoteX)
+            print("\nLotex :", LoteX)
 
             pacBytes = ((170*3) + 15)
             input_file = open((self.dir + "/data/" + LoteX), 'r+b')
@@ -57,11 +57,13 @@ class AcessServe(Log):
 
 
             if not(flag_falha):    
-
+                print(flag_falha)
+                print("\nREMOVENDO\n")
                 os.remove(self.dir + "/data/" + LoteX)
 
             else:
                 if nBytes >= self.ConjAmostra*2100:
+                    print("aux_rename",aux_rename)
                     if str(aux_rename) not in self.OB_Card.contArq():
 
                         os.rename((self.dir + "/data/" + LoteX), (self.dir + "/data/" + str(aux_rename)))
@@ -70,7 +72,12 @@ class AcessServe(Log):
                     else:
                         aux_rename+=1
                 else:
+                    
+                    if str(aux_rename) not in self.OB_Card.contArq():
+                        os.rename((self.dir + "/data/" + LoteX), (self.dir + "/data/" + str(aux_rename)))
+                    
                     return aux_rename, False
+                
         return aux_rename, True
 
     def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 2):
@@ -107,8 +114,10 @@ class AcessServe(Log):
                 pass
 
             else:
-                if "OK" in response.decode():
-                    print(response.decode())
+                result = response.decode()
+                print(result)
+                if result.count("OK") == 2:
+                    
                     status = True
                     pass
                 else:

@@ -164,6 +164,14 @@ class OnSd(Log):
             f = open((self.dir + "/data/" + str(self.contPasta)), 'w')
             f.close()
             
+    def setContagemArquivo(self , cont = 0):
+        
+        self.contPasta = cont
+        
+        f = open((self.dir + "/contPasta.txt"), 'w')
+        f.write(str(self.contPasta))
+        f.close()
+        
     def contArq(self):
         on_diretorio_cor = [int(i) for i in os.listdir(self.dir + "/data")]
         on_diretorio_cor.sort()

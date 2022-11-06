@@ -25,10 +25,10 @@ class AcessServe(Log):
     def enviaPacs(self):
 
         aux_rename = 0
-        flag_falha = False
     
         for LoteX in self.OB_Card.contArq():
             
+            flag_falha = False
             print("\nLotex :", LoteX)
 
             pacBytes = ((170*3) + 15)
@@ -43,21 +43,25 @@ class AcessServe(Log):
                     float_array = array('f', struct.unpack((pacBytes*'f'), bytesfile))               
                     
                     self.esvazia_memoria()
-                    if not(self.envia_servico(self.modelosStringJson(float_array))):
+                    
+                    status_res = self.envia_servico(self.modelosStringJson(float_array))
+                    print("Retornor de resposta ", status_res)
+                    if status_res == False:
                         flag_falha = True
                         break
 
             except Exception as errorENV:
 
                 error = ("\n=> Erro no setup de pacote: " + str(errorENV))  
-                self.addLog("AcessServe.txt", error)                
+                self.addLog("AcessServe.txt", error)
+                flag_falha = True
 
             finally:
                 input_file.close()
 
 
-            if not(flag_falha):    
-                print(flag_falha)
+            if flag_falha == False:    
+                print("flag_falha ", flag_falha)
                 print("\nREMOVENDO\n")
                 os.remove(self.dir + "/data/" + LoteX)
 
@@ -80,7 +84,7 @@ class AcessServe(Log):
                 
         return aux_rename, True
 
-    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 2):
+    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 10):
         
         status = False
         tentativas = _tentativas
@@ -108,18 +112,18 @@ class AcessServe(Log):
                 self.sock.settimeout(sockTimeout)
                 response = self.sock.recv(1000)
                  
-            except MemoryError as errorMEM:
-                error = ("\n=> Não foi possivel alocar memoria para resposta" + str(errorMEM))
+            except Exception as errorRecev:
+                error = ("\n=> Não foi possivel alocar memoria para resposta" + str(errorRecev))
                 self.addLog("AcessServe.txt",error)   
                 pass
 
             else:
+                self.sock.settimeout(sockTimeout)
                 result = response.decode()
                 print(result)
                 if result.count("OK") == 2:
-                    
                     status = True
-                    pass
+
                 else:
                     print("\n=> Sem ERRO no micro, mas ERRO no Seriço HTTP\n")            
                     pass
@@ -129,7 +133,7 @@ class AcessServe(Log):
         else:
             error = ("\n=> falha na conecção com o serviço")
             self.addLog("AcessServe.txt",error)
-            
+        print("\n=>status de envio de pacote: ",status)    
         return status
 
     def esvazia_memoria(self):

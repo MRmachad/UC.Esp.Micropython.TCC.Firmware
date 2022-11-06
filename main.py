@@ -22,9 +22,9 @@ SENHA = "785623ptbr"
 HOST = '45.166.184.6'
 URL = "comportamento"
 
-ID_VACA = 6
+ID_VACA = 16
 PORTA = 2037
-ZONEPOINTHOUR = (2,6,19,21)
+ZONEPOINTHOUR = (2,6,16,21)
 QTDARQUIVOS = 21
 QTDACONJUNTO = 39
 
@@ -37,7 +37,7 @@ OB_Pino_Debug = Pin(25, Pin.IN)
 OB_Pino_Led = Pin(14, Pin.OUT)
 OB_Pino_INT = machine.Pin(13, mode = Pin.IN)
 OB_Card = OnSd(DIR_PADRAO, _ContArquivosEnvio = QTDARQUIVOS)                                              
-OB_Interface_I2C = FaceI2C(dir = DIR_PADRAO, gav = True, scale = 0, freqAmostra = 200, SDA_PIN = 21, SCL_PIN = 22)     
+OB_Interface_I2C = FaceI2C(dir = DIR_PADRAO, gav = True, scale = 0, freqAmostra = 100, SDA_PIN = 21, SCL_PIN = 22)     
 ######################## PARAMETROS DE HARDWARE ###########################                                       
 #
 #
@@ -86,11 +86,11 @@ def SetupEnvio(FlagEstouro, FlagEnvio):
 
                 if point_pasta != QTDARQUIVOS:
                     print("envio incompleto ou completo", point_pasta)
+                    print(OB_Card.contArq())
                     OB_Card.clearRECIC()
                     if Reinicia == True:
                         OB_Card.reiniciaContagemArquivo(point_pasta)
-                    else:
-                        OB_Card.setContagemArquivo(point_pasta)
+
 
 def SetupConfig():
     

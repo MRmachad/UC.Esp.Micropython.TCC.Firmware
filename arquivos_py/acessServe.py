@@ -25,10 +25,10 @@ class AcessServe(Log):
     def enviaPacs(self):
 
         aux_rename = 0
-        flag_falha = False
     
         for LoteX in self.OB_Card.contArq():
             
+            flag_falha = False
             print("\nLotex :", LoteX)
 
             pacBytes = ((170*3) + 15)
@@ -43,7 +43,7 @@ class AcessServe(Log):
                     float_array = array('f', struct.unpack((pacBytes*'f'), bytesfile))               
                     
                     self.esvazia_memoria()
-                    if not(self.envia_servico(self.modelosStringJson(float_array))):
+                    if self.envia_servico(self.modelosStringJson(float_array)) == False:
                         flag_falha = True
                         break
 
@@ -56,7 +56,7 @@ class AcessServe(Log):
                 input_file.close()
 
 
-            if not(flag_falha):    
+            if flag_falha == False:    
                 print(flag_falha)
                 print("\nREMOVENDO\n")
                 os.remove(self.dir + "/data/" + LoteX)
@@ -117,9 +117,8 @@ class AcessServe(Log):
                 result = response.decode()
                 print(result)
                 if result.count("OK") == 2:
-                    
                     status = True
-                    pass
+
                 else:
                     print("\n=> Sem ERRO no micro, mas ERRO no Seriço HTTP\n")            
                     pass

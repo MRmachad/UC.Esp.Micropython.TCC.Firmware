@@ -1,5 +1,6 @@
 from arquivos_py.onSd import OnSd
 from arquivos_py.faceI2C import FaceI2C
+from arquivos_py.dateTime import DateTime
 from arquivos_py.acessWifi import AcessWifi
 from arquivos_py.acessServe import AcessServe
 
@@ -13,80 +14,170 @@ import os
 #
 #
 ########################### PARAMETROS DE USO ###########################
-id_esp = 1
-dir_padrao = '/'
-_sd = "LUCAS E LEO"
-_passw = "785623ptbr"
-set_host = '192.168.100.8'
-set_porta = 3060
-ContArquivosEnvio =  5
+
+DIR_PADRAO = "/"
+LOGIN =  "LUCAS E LEO"
+SENHA = "785623ptbr"
+HOST = '45.166.184.6'
+URL = "comportamento"
+
+ID_VACA = 16
+PORTA = 2037
+ZONEPOINTHOUR = (2,6,16,22)
+QTDARQUIVOS = 21
+QTDACONJUNTO = 39
+
+
 ########################### PARAMETROS DE USO ###########################
 #
 #
 #
 ######################## PARAMETROS DE HARDWARE ###########################
-deg = Pin(21, Pin.IN)
-led = Pin(2, Pin.OUT)
-acorda = machine.Pin(27, mode = Pin.IN)
-card_SD = OnSd(dir_padrao, _ContArquivosEnvio = ContArquivosEnvio)                                              
-mp_esp = FaceI2C(dir = dir_padrao, gav = True, scale = 0, freqAmostra = 200, SDA_PIN = 25, SCL_PIN = 26)   
+
+OB_Pino_Debug = Pin(25, Pin.IN)
+OB_Pino_Led = Pin(14, Pin.OUT)
+OB_Pino_INT = machine.Pin(13, mode = Pin.IN)
+OB_Card = OnSd(DIR_PADRAO, _ContArquivosEnvio = QTDARQUIVOS)                                              
+OB_Interface_I2C = FaceI2C(dir = DIR_PADRAO, gav = True, scale = 0, freqAmostra = 100, SDA_PIN = 21, SCL_PIN = 22)     
+
 ######################## PARAMETROS DE HARDWARE ###########################                                       
 #
 #
 #
 
+######################## PARAMETROS VARIAVEIS ###########################    
+FlagEnvio = False
+FlagEstouro = False
+######################## PARAMETROS VARIAVEIS ###########################                                       
+#
+#
+#
+
+def SetupEnvio(FlagEstouro, FlagEnvio):
+
+    OB_Interface_WF = AcessWifi(sd = LOGIN, passw = SENHA)
+
+    if FlagEstouro == True:
+
+        print("\n=>Estouro de Arquivo, preciso enviar...")
+
+        if OB_Interface_WF.isStrengthRSSI():
+            acessServe = AcessServe(DIR_PADRAO, host = HOST, porta = PORTA,  _rota = URL, ConjAmostra = QTDACONJUNTO)                                                              
+            point_pasta, Reinicia = acessServe.enviaPacs()
+            
+            print("POINT PASTA",point_pasta)
+            if point_pasta != QTDARQUIVOS:
+                print("envio incompleto ou completo", point_pasta)
+                OB_Card.clearRECIC()
+                OB_Card.reiniciaContagemArquivo(point_pasta)
+            else:
+                print("Não conseguiu enviar nenhum dos arquivos, como estou em estouro vou recircular")
+                OB_Card.setRECIC()
+                OB_Card.reiniciaContagemArquivo()
+                  
+        else:
+            print("RSSI fraco, como estou em estouro irei recicular")
+            OB_Card.setRECIC()
+            OB_Card.reiniciaContagemArquivo()
+    else:
+
+        if FlagEnvio == True:  
+
+            if OB_Interface_WF.isStrengthRSSI():
+                acessServe = AcessServe(DIR_PADRAO, host = HOST, porta = PORTA,  _rota = URL, ConjAmostra = QTDACONJUNTO)                                                              
+                point_pasta, Reinicia = acessServe.enviaPacs()
+
+                if point_pasta != QTDARQUIVOS:
+                    print("envio incompleto ou completo", point_pasta)
+                    print(OB_Card.contArq())
+                    OB_Card.clearRECIC()
+                    if Reinicia == True:
+                        OB_Card.reiniciaContagemArquivo(point_pasta)
+
+
 def startEnvio():
     acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta)  
 
-    print("\n=> entrou no envio")                                                                      
-    acessServe.enviaPacs()
-    print("\n=> saiu no envio")    
 
-
-
-def verificaIntensidadeEnvio():
-    pointWifi = AcessWifi(sd = _sd, passw = _passw)
-    return pointWifi.isStrengthRSSI()
-
-def setupEnvio(numArquivoVal = 0):
-
-    if numArquivoVal >= ContArquivosEnvio:
-        print("Estouro de Arquivo, preciso enviar...")
-        while not verificaIntensidadeEnvio():
-            machine.lightsleep(10000)
-        startEnvio()
-    else:
-        if verificaIntensidadeEnvio():
-            startEnvio()
-            card_SD.reiniciaContagemArquivo()
-        else:
-            print("\n=> Over RSSI")
-
-def setupConfig():
+def SetupConfig():
     
-    while(deg.value() == 0):
-        led.value(1)
-        machine.lightsleep(2000)
-        led.value(0)
-        machine.lightsleep(2000)
-
-    led.value(1)
+    OB_Interface_WF = AcessWifi(sd = LOGIN, passw = SENHA, tryDefault = True)
     
-    if "data" not in os.listdir(dir_padrao):
-        if "contPasta.txt" in os.listdir(dir_padrao):
+    if "data" not in os.listdir(DIR_PADRAO):
+        os.mkdir("./data") 
+
+        if "contPasta.txt" in os.listdir(DIR_PADRAO):
             os.remove("./contPasta.txt")
-        os.mkdir("./data")                                           
-        os.chdir("./data")
-        os.mkdir("./0") 
 
-    pointWifi = AcessWifi(sd = _sd, passw = _passw)
-    pointWifi.do_connect_STA()
+        if "Logclass" not in os.listdir(DIR_PADRAO):                                       
+            os.mkdir("./Logclass")
+
+        print("\n=>Setup Inicial")
+        
+        OB_Pino_Led.value(1)
+        machine.lightsleep(2000)
+
+        OB_Interface_WF.do_connect_STA()
+
+    else:
+        
+        print("\n=>Continuando amostragem")
+        
+        if OB_Interface_WF.isStrengthRSSI():
+            pass
+        else:
+            OB_DateTime = DateTime()
+            OB_DateTime.RecuperaHorarioCorrente()
+            
+        OB_Pino_Led.value(1)
+        machine.lightsleep(2000)
+
+    OB_Interface_I2C.Calendario()
     
-    mp_esp.Calendario()
-    
-    mp_esp.iniciaMP()                                      
-    led.value(0)    
+    OB_Interface_I2C.iniciaMP()   
+
+    OB_Pino_Led.value(0)    
+
     dormindo()
+
+def EncapsulaLaco():           
+
+    AccX, AccY, AccZ, timer = OB_Interface_I2C.pega_valor()   
+
+    return OB_Card.preeencheARQ(ID_VACA, AccX, AccY, AccZ, timer, QTDACONJUNTO), (isInMancha(timer[1], ZONEPOINTHOUR) and OB_Card.contPasta >= 2)
+
+def isInMancha(_timer = "", _zonePointHour = []):
+
+    OB_DateTime = DateTime()
+
+    dt=[]
+    for i in range(_timer.decode().count("_")):
+    
+        dt.append(int(_timer[:_timer.decode().find("_")]))
+        _timer = _timer[_timer.decode().find("_") + 1:]
+
+
+    dt.append(int(_timer.decode()))    
+    
+    ###
+    OB_DateTime.GuardaHorarioCorrente(dt)
+    ###
+
+    print("\n=>Hora atual: ", dt[3])
+
+    for pointHour in _zonePointHour:
+
+        if dt[3] in (OB_DateTime.sub(pointHour, 1), pointHour):
+            return True
+    return False
+
+def dormindo():
+
+    esp32.wake_on_ext0(pin = OB_Pino_INT, level = esp32.WAKEUP_ANY_HIGH)
+
+    print("\n=> Dormindo em DeepSleep\n")
+
+    machine.deepsleep()
 
 def encapsulaLaco():           
     AccX, AccY, AccZ, timer = mp_esp.pega_valor()    
@@ -103,29 +194,32 @@ def dormindo(islight = False):
         machine.deepsleep()
 
 if __name__ == '__main__':
-   
-    led.value(deg.value())
+    OB_Pino_Led.value(0)
+    OB_Pino_Led.value(OB_Pino_Debug.value())
     
-    if(deg.value() == 1):
-        print("\n=> Debug\n")
+
+    if(OB_Pino_Debug.value() == 1):
+        print("\n=>Debug\n")
 
     else:
 
         if machine.reset_cause() == machine.DEEPSLEEP_RESET:
             print('\n=> Woke from a deep sleep \n')    
 
-            if encapsulaLaco() == True:
-                print("\n=> Pode tentar enviar? Sim")
-                setupEnvio(card_SD.contPasta)
-                dormindo()
-            else:
-                print("\n=> Pode tentar enviar? Não")
-                dormindo()
+            FlagEstouro, FlagEnvio = EncapsulaLaco()
+            
+            print("\n=>Estouro e flag ", FlagEstouro, FlagEnvio)
+            print(OB_Card.contArq())
+
+            SetupEnvio(FlagEstouro, FlagEnvio)
+
+            dormindo()
+
         else:
-            print("\n=> Power on or hard reset")
-            setupConfig()
-        
-       
+
+            print("\n=>Power on or hard reset")
+            SetupConfig()
+
 
 
 

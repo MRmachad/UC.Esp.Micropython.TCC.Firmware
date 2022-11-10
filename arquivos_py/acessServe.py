@@ -6,8 +6,10 @@ import socket
 import struct
 import micropython
 from array import array
+
 from arquivos_py.log import Log
 from arquivos_py.onSd import OnSd
+
 
 
 class AcessServe(Log):
@@ -99,6 +101,7 @@ class AcessServe(Log):
                 print("\n=> Tentativa N: ",(_tentativas-tentativas)," ||Conecção com o serviço http em falha, erro: " , error)  
                 tentativas -= 1
                 pass
+
         
         if tentativas != 0:
             print("nas tentativas")

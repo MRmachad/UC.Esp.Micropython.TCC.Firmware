@@ -64,6 +64,7 @@ class AcessWifi(Log):
         print("\n=>Hora Setada", rtc.datetime())
 
     def isStrengthRSSI(self, parametro = -95):
+
         
         wlan = network.WLAN(network.STA_IF)
         wlan.active(True)
@@ -80,7 +81,7 @@ class AcessWifi(Log):
         
         wlan.active(False)
         return False
-
+        
     def corrigeHorario(self, dt = []):
 
         dateTime = DateTime()
@@ -88,4 +89,5 @@ class AcessWifi(Log):
         dt = dateTime.subtracao([0,0,0,3,0,0],dt)
             
         return (dt[0],dt[1],dt[2],dt[3],dt[4],dt[5])
+
 

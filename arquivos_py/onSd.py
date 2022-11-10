@@ -14,7 +14,7 @@ class OnSd(Log):
             self.contPasta = int(open(self.dir + "/contPasta.txt").read())  
         else:
             self.contPasta = 0
-            
+
         if "RECIC.txt" in os.listdir(self.dir):
             self.RECIC = int(open(self.dir + "/RECIC.txt").read())    
         else:
@@ -42,6 +42,7 @@ class OnSd(Log):
         return self.auxSalvaDados(conjutoFloat, _controleAmostras)
 
     def auxSalvaDados(self, _conjutoFloat = [], controleAmostras = 10):
+
         
          
         dir_corrente = (self.dir + "/data")
@@ -176,7 +177,7 @@ class OnSd(Log):
         on_diretorio_cor = [int(i) for i in os.listdir(self.dir + "/data")]
         on_diretorio_cor.sort()
         return [str(i) for i in on_diretorio_cor]
-    
+
     
         
         

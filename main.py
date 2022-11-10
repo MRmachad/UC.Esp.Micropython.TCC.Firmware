@@ -4,7 +4,6 @@ from arquivos_py.dateTime import DateTime
 from arquivos_py.acessWifi import AcessWifi
 from arquivos_py.acessServe import AcessServe
 
-
 from machine import Pin
 import micropython
 import esp32
@@ -28,20 +27,24 @@ ZONEPOINTHOUR = (2,6,16,22)
 QTDARQUIVOS = 21
 QTDACONJUNTO = 39
 
+
 ########################### PARAMETROS DE USO ###########################
 #
 #
 #
 ######################## PARAMETROS DE HARDWARE ###########################
+
 OB_Pino_Debug = Pin(25, Pin.IN)
 OB_Pino_Led = Pin(14, Pin.OUT)
 OB_Pino_INT = machine.Pin(13, mode = Pin.IN)
 OB_Card = OnSd(DIR_PADRAO, _ContArquivosEnvio = QTDARQUIVOS)                                              
 OB_Interface_I2C = FaceI2C(dir = DIR_PADRAO, gav = True, scale = 0, freqAmostra = 100, SDA_PIN = 21, SCL_PIN = 22)     
+
 ######################## PARAMETROS DE HARDWARE ###########################                                       
 #
 #
 #
+
 ######################## PARAMETROS VARIAVEIS ###########################    
 FlagEnvio = False
 FlagEstouro = False
@@ -90,6 +93,10 @@ def SetupEnvio(FlagEstouro, FlagEnvio):
                     OB_Card.clearRECIC()
                     if Reinicia == True:
                         OB_Card.reiniciaContagemArquivo(point_pasta)
+
+
+def startEnvio():
+    acessServe = AcessServe(dir_padrao, host = set_host, porta = set_porta)  
 
 
 def SetupConfig():
@@ -149,12 +156,13 @@ def isInMancha(_timer = "", _zonePointHour = []):
         dt.append(int(_timer[:_timer.decode().find("_")]))
         _timer = _timer[_timer.decode().find("_") + 1:]
 
+
     dt.append(int(_timer.decode()))    
     
     ###
     OB_DateTime.GuardaHorarioCorrente(dt)
     ###
-    
+
     print("\n=>Hora atual: ", dt[3])
 
     for pointHour in _zonePointHour:
@@ -171,10 +179,25 @@ def dormindo():
 
     machine.deepsleep()
 
+def encapsulaLaco():           
+    AccX, AccY, AccZ, timer = mp_esp.pega_valor()    
+    return card_SD.preeencheARQ(id_esp, AccX, AccY, AccZ, timer)
+
+def dormindo(islight = False):
+    esp32.wake_on_ext0(pin = acorda, level = esp32.WAKEUP_ANY_HIGH)
+    
+    if(islight):
+        print("\n=> Dormindo em lightSleep\n")
+        machine.lightsleep()
+    else:
+        print("\n=> Dormindo em DeepSleep\n")
+        machine.deepsleep()
+
 if __name__ == '__main__':
     OB_Pino_Led.value(0)
     OB_Pino_Led.value(OB_Pino_Debug.value())
     
+
     if(OB_Pino_Debug.value() == 1):
         print("\n=>Debug\n")
 
@@ -182,7 +205,7 @@ if __name__ == '__main__':
 
         if machine.reset_cause() == machine.DEEPSLEEP_RESET:
             print('\n=> Woke from a deep sleep \n')    
-            
+
             FlagEstouro, FlagEnvio = EncapsulaLaco()
             
             print("\n=>Estouro e flag ", FlagEstouro, FlagEnvio)
@@ -196,8 +219,7 @@ if __name__ == '__main__':
 
             print("\n=>Power on or hard reset")
             SetupConfig()
-        
-       
+
 
 
 

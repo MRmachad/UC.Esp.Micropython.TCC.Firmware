@@ -183,16 +183,6 @@ def encapsulaLaco():
     AccX, AccY, AccZ, timer = mp_esp.pega_valor()    
     return card_SD.preeencheARQ(id_esp, AccX, AccY, AccZ, timer)
 
-def dormindo(islight = False):
-    esp32.wake_on_ext0(pin = acorda, level = esp32.WAKEUP_ANY_HIGH)
-    
-    if(islight):
-        print("\n=> Dormindo em lightSleep\n")
-        machine.lightsleep()
-    else:
-        print("\n=> Dormindo em DeepSleep\n")
-        machine.deepsleep()
-
 if __name__ == '__main__':
     OB_Pino_Led.value(0)
     OB_Pino_Led.value(OB_Pino_Debug.value())

@@ -117,18 +117,19 @@ class AcessServe(Log):
                  
             except Exception as errorRecev:
                 error = ("\n=> Não foi possivel alocar memoria para resposta" + str(errorRecev))
-                self.addLog("AcessServe.txt",error)   
+                self.addLog("AcessServe.txt",error)
+                status = False
                 pass
 
             else:
                 self.sock.settimeout(sockTimeout)
-                result = response.decode()
-                print(result)
-                if result.count("OK") == 2:
+                
+                
+                if "HTTP/1.1 200 OK" in response.decode():
                     status = True
-
                 else:
-                    print("\n=> Sem ERRO no micro, mas ERRO no Seriço HTTP\n")            
+                    print("\n=> Sem ERRO no micro, mas ERRO no Seriço HTTP\n")
+                    
                     pass
             finally:    
                 self.sock.close()
@@ -136,6 +137,7 @@ class AcessServe(Log):
         else:
             error = ("\n=> falha na conecção com o serviço")
             self.addLog("AcessServe.txt",error)
+            
         print("\n=>status de envio de pacote: ",status)    
         return status
 
@@ -163,7 +165,9 @@ class AcessServe(Log):
         minuto1 = {"minuto1":int(float_array[5])}
         segundo1 = {"segundo1":int(float_array[6])}
         milisegundo1 = {"milisegundo1":int(float_array[7]/100)}
-
+        
+        
+        
         ano2 = {"ano2":int(float_array[8])}
         mes2 = {"mes2":int(float_array[9])}
         dia2 = {"dia2":int(float_array[10])}
@@ -171,6 +175,7 @@ class AcessServe(Log):
         minuto2 = {"minuto2":int(float_array[12])}
         segundo2 = {"segundo2":int(float_array[13])}
         milisegundo2 = {"milisegundo2":int(float_array[14]/100)}
+        
         
         comportamentos = {"comportamentos": data}
         quantidade = {"quantidade":int(len(float_array[15:])/3)}

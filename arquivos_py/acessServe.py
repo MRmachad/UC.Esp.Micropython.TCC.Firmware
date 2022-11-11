@@ -86,7 +86,7 @@ class AcessServe(Log):
                 
         return aux_rename, True
 
-    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 10):
+    def envia_servico(self, data_json, _tentativas = 2, sockTimeout = 10.0):
         
         status = False
         tentativas = _tentativas
